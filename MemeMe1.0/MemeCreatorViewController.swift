@@ -32,6 +32,8 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
         NSAttributedString.Key.font: UIFont(name: "HelveticaNeue-CondensedBlack", size: 40)!,
         NSAttributedString.Key.strokeWidth: -5.0
     ]
+    
+   // var tapGesture
 
     //MARK: Meme Model
     
@@ -53,62 +55,49 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
         bottomText.delegate = self
         bottomText.defaultTextAttributes = memeTextAttributes
         UISetupContent()
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(self.dismissKeyboard(_:)))
-        self.view.addGestureRecognizer(tapGesture)
-
-        //if initial orientation is landscape, adjust text.
-        if UIApplication.shared.statusBarOrientation.isLandscape {
-            self.topTextYConstraint.constant = 0
-            self.bottomTextYConstraint.constant = 0
-        }
+        
+        // add gesture recognizer to provide user ability to dismiss keyboard by tapping outside of text field.
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard(_:)))
+        view.addGestureRecognizer(tapGesture)
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        
         subscribeToKeyboardNotifications()
-        cameraButton.isEnabled = UIImagePickerController.isSourceTypeAvailable(.camera)
+        subscribeToOrientationNotifications()
         UISetupButtons()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+        
         unsubscribeFromKeyboardNotifications()
+        unsubscribeFromOrientationNotifications()
     }
     
-    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
-        if UIDevice.current.orientation.isLandscape {
-            topTextYConstraint.constant = 0
-            bottomTextYConstraint.constant = 0
-        } else {
-            topTextYConstraint.constant = 35
-            bottomTextYConstraint.constant = -35
-        }
-    }
-    
-    // MARK: Text Field Delegate Methods
+    // MARK: Text Field Delegate and Handling Methods
     
     func textFieldDidBeginEditing(_ textField: UITextField) {
-        // TODO update this to use switch?, make sure to add default. extract into textFieldDefaultTextHandler method with below.
-        if (textField == topText) {
-            if (topText.text == "TOP") {
-                textField.text = ""
-            }
-        }
-        if (textField == bottomText) {
-            if (bottomText.text == "BOTTOM") {
-                textField.text = ""
-            }
-        }
+        textFieldDefaultTextHandler(true, textField)
     }
     
     func textFieldDidEndEditing(_ textField: UITextField) {
+        textFieldDefaultTextHandler(false, textField)
+    }
+    
+    func textFieldDefaultTextHandler(_ beginEditing: Bool, _ textField: UITextField) {
         if (textField == topText) {
-            if (topText.text == "") {
+            if (textField.text == "TOP" && beginEditing) {
+                textField.text = ""
+            } else if (textField.text == "" && !beginEditing) {
                 textField.text = "TOP"
             }
         }
         if (textField == bottomText) {
-            if (bottomText.text == "") {
+            if (textField.text == "BOTTOM" && beginEditing) {
+                textField.text = ""
+            } else if (textField.text == "" && !beginEditing) {
                 textField.text = "BOTTOM"
             }
         }
@@ -133,6 +122,27 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
         dismiss(animated: true, completion: nil)
     }
     
+    // MARK: Device Orientation Handling
+    
+    func subscribeToOrientationNotifications() {
+        NotificationCenter.default.addObserver(self, selector: #selector(screenRotated(_:)), name: UIDevice.orientationDidChangeNotification, object: nil)
+    }
+    
+    func unsubscribeFromOrientationNotifications() {
+        NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
+    }
+    
+    @objc func screenRotated(_ notification: Notification) {
+        // update the textField constraints to prevent text covering the center of the image while in landscape.
+        if UIDevice.current.orientation.isLandscape {
+            topTextYConstraint.constant = 0
+            bottomTextYConstraint.constant = 0
+        } else {
+            topTextYConstraint.constant = 35
+            bottomTextYConstraint.constant = -35
+        }
+    }
+    
     // MARK: Keyboard Notification Handling
     
     func subscribeToKeyboardNotifications() {
@@ -145,15 +155,15 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
         NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
     }
     
-    @objc func keyboardWillShow(_ notification:Notification) {
-        if (self.view.frame.origin.y == 0 && bottomText.isFirstResponder) {
-            self.view.frame.origin.y -= getKeyboardHeight(notification)
+    @objc func keyboardWillShow(_ notification: Notification) {
+        if (view.frame.origin.y == 0 && bottomText.isFirstResponder) {
+            view.frame.origin.y -= getKeyboardHeight(notification)
         }
     }
     
-    @objc func keyboardWillHide(_ notification:Notification) {
-        if (self.view.frame.origin.y != 0) {
-            self.view.frame.origin.y = 0
+    @objc func keyboardWillHide(_ notification: Notification) {
+        if (view.frame.origin.y != 0) {
+            view.frame.origin.y = 0
         }
     }
     
@@ -162,7 +172,7 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
         bottomText.resignFirstResponder()
     }
     
-    func getKeyboardHeight(_ notification:Notification) -> CGFloat {
+    func getKeyboardHeight(_ notification: Notification) -> CGFloat {
         let userInfo = notification.userInfo
         let keyboardSize = userInfo![UIResponder.keyboardFrameEndUserInfoKey] as! NSValue // of CGRect
         
@@ -171,7 +181,7 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
     
     // MARK: Meme Image and Model Handling
     
-    func saveMeme(_ memeImage:UIImage) {
+    func saveMeme(_ memeImage: UIImage) {
         // Create the meme
         let meme = Meme(topText: topText.text!, bottomText: bottomText.text!, originalImage: imageView.image!, memedImage: memeImage)
         // Save the meme
@@ -184,8 +194,8 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
         bottomToolbar.isHidden = true
         
         // Render view to an image
-        UIGraphicsBeginImageContext(self.view.frame.size)
-        view.drawHierarchy(in: self.view.frame, afterScreenUpdates: true)
+        UIGraphicsBeginImageContext(view.frame.size)
+        view.drawHierarchy(in: view.frame, afterScreenUpdates: true)
         let memedImage:UIImage = UIGraphicsGetImageFromCurrentImageContext()!
         UIGraphicsEndImageContext()
         
@@ -223,7 +233,7 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
                 self.saveMeme(meme)
             }
         }
-        self.present(controller, animated: true, completion: nil)
+        present(controller, animated: true, completion: nil)
     }
     
     @IBAction func cancelMeme(_ sender: Any) {
@@ -244,6 +254,7 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
     
     func UISetupButtons() {
         //reset nav bar buttons
+        cameraButton.isEnabled = UIImagePickerController.isSourceTypeAvailable(.camera)
         shareButton.isEnabled = (imageView.image != nil)
         cancelButton.isEnabled = (imageView.image != nil)
     }
