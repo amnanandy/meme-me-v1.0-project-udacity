@@ -26,6 +26,7 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
     
     // MARK: UI Attributes
     
+    // Attributes provided by Udacity training.
     let memeTextAttributes: [NSAttributedString.Key: Any] = [
         NSAttributedString.Key.strokeColor: UIColor.black,
         NSAttributedString.Key.foregroundColor: UIColor.white,
@@ -116,6 +117,7 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
     
     // MARK: Image Picker Delegate Methods
     
+    // imagePickerController derived from Udacity training.
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         if let image = info[UIImagePickerController.InfoKey.originalImage] as? UIImage {
             imageView.image = image
@@ -150,6 +152,7 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
     
     // MARK: Keyboard Notification Handling
     
+    // keyboard notifications provided by Udacity training.
     func subscribeToKeyboardNotifications() {
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow(_:)), name: UIResponder.keyboardWillShowNotification, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide(_:)), name: UIResponder.keyboardWillHideNotification, object: nil)
@@ -160,6 +163,7 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
         NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
     }
     
+    // keyboardWillShow contents derived from Udacity training.
     @objc func keyboardWillShow(_ notification: Notification) {
         if (view.frame.origin.y == 0 && bottomText.isFirstResponder) {
             //adjust the frame to prevent keyboard from covering the bottom text field.
@@ -179,6 +183,7 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
         bottomText.resignFirstResponder()
     }
     
+    // getKeyboardHeight derived from Udacity training.
     func getKeyboardHeight(_ notification: Notification) -> CGFloat {
         let userInfo = notification.userInfo
         let keyboardSize = userInfo![UIResponder.keyboardFrameEndUserInfoKey] as! NSValue // of CGRect
@@ -195,6 +200,7 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
         UIImageWriteToSavedPhotosAlbum(meme.memedImage, nil, nil, nil);
     }
     
+    //generateMemedImage derived from Udacity training.
     func generateMemedImage() -> UIImage {
         //hide toolbar and nav bar
         navBar.isHidden = true
@@ -213,6 +219,7 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
         return memedImage
     }
     
+    // selectImage derived from Udacity training.
     func selectImage(_ sourceType: UIImagePickerController.SourceType) {
         let selectCameraImage = UIImagePickerController()
         
