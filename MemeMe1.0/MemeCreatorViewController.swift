@@ -32,8 +32,6 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
         NSAttributedString.Key.font: UIFont(name: "HelveticaNeue-CondensedBlack", size: 40)!,
         NSAttributedString.Key.strokeWidth: -5.0
     ]
-    
-   // var tapGesture
 
     //MARK: Meme Model
     
@@ -86,6 +84,13 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
         textFieldDefaultTextHandler(false, textField)
     }
     
+    /* Manage the default text in the top and bottom text fields.
+       This provided two functions -
+          1. clears the default text when the user begins editing.
+          2. if the text field is left blank the default text is replaced, preventing the field from appearing invisible.
+       The beginEditing param indicates if the text field has begun or ended editing.
+       The textField param indicates which text field is being edited.
+    */
     func textFieldDefaultTextHandler(_ beginEditing: Bool, _ textField: UITextField) {
         if (textField == topText) {
             if (textField.text == "TOP" && beginEditing) {
@@ -125,14 +130,14 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
     // MARK: Device Orientation Handling
     
     func subscribeToOrientationNotifications() {
-        NotificationCenter.default.addObserver(self, selector: #selector(screenRotated(_:)), name: UIDevice.orientationDidChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleScreenRotation(_:)), name: UIDevice.orientationDidChangeNotification, object: nil)
     }
     
     func unsubscribeFromOrientationNotifications() {
         NotificationCenter.default.removeObserver(self, name: UIDevice.orientationDidChangeNotification, object: nil)
     }
     
-    @objc func screenRotated(_ notification: Notification) {
+    @objc func handleScreenRotation(_ notification: Notification) {
         // update the textField constraints to prevent text covering the center of the image while in landscape.
         if UIDevice.current.orientation.isLandscape {
             topTextYConstraint.constant = 0
@@ -157,12 +162,14 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
     
     @objc func keyboardWillShow(_ notification: Notification) {
         if (view.frame.origin.y == 0 && bottomText.isFirstResponder) {
+            //adjust the frame to prevent keyboard from covering the bottom text field.
             view.frame.origin.y -= getKeyboardHeight(notification)
         }
     }
     
     @objc func keyboardWillHide(_ notification: Notification) {
         if (view.frame.origin.y != 0) {
+            //if the frame is in an adjusted state, reset it to the default.
             view.frame.origin.y = 0
         }
     }
@@ -242,9 +249,10 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
         UISetupButtons()
     }
     
-    // MARK: UI Helper Functions
+    // MARK: UI Helper Methods
     
     func UISetupContent() {
+        // set default text and image
         topText.text = "TOP"
         topText.textAlignment = NSTextAlignment.center
         bottomText.text = "BOTTOM"
@@ -253,7 +261,7 @@ class MemeCreatorViewController: UIViewController, UIImagePickerControllerDelega
     }
     
     func UISetupButtons() {
-        //reset nav bar buttons
+        // set nav bar and toolbar button states
         cameraButton.isEnabled = UIImagePickerController.isSourceTypeAvailable(.camera)
         shareButton.isEnabled = (imageView.image != nil)
         cancelButton.isEnabled = (imageView.image != nil)
